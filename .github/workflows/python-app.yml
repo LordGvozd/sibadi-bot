@@ -7,15 +7,22 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true 
+  
 permissions:
   contents: read
 
 jobs:
-  ci:
+  build:
     name: Ci
     runs-on: ubuntu-lastest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13"]
     
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +32,17 @@ jobs:
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
+
+      - name: Mypy
+        run: uv run mypy .
+
+      - name: Ruff
+        run: |
+          uv run ruff check --exit-non-zero-on-fix
+          uv run ruff format --check --fix 
+      - name: WPS
+        run: uv run flake8 . --select=WPS
+
 
       - name: Run tests
         run: uv run pytest tests
