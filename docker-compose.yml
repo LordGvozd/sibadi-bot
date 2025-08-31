@@ -1,0 +1,7 @@
+services:
+  bot:
+    container_name: sibadi_bot
+    build:
+      context: .
+    env_file: ./.env
+    restart: always
