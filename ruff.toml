@@ -1,14 +1,13 @@
-[ruff]
 preview = true
 fix = true
 target-version = "py313"
 line-length = 80
 
-[ruff.format]
+[format]
 quote-style = "double"
 docstring-code-format = true
 
-[ruff.lint]
+[lint]
 select = [
   "A",    # flake8-builtins
   "B",    # flake8-bugbear
