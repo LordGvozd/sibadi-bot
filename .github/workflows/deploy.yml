@@ -1,0 +1,25 @@
+name: Deploy to WPS
+
+on:
+  push:
+    branches: [ master ] 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server & restart containers
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/sibadi-bot
+            git pull origin master
+            docker-compose pull
+            docker-compose up -d --build
