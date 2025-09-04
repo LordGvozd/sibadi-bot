@@ -18,7 +18,7 @@ dp = Dispatcher()
 
 
 def _format_schedule(schedule: Schedule) -> str:
-    head = f"Расписание на: <i>{schedule.date.strftime('%d-%m-%Y')}</i>\n\n"
+    head = f"распорядок на: <i>{schedule.date.strftime('%d-%m-%Y')}</i>\n\n"
 
     body = "\n".join([
         f"{lesson.number}) <i>[{lesson.starts_at.strftime('%H:%M')}]</i> <b>{lesson.name.title()}</b> <code>{lesson.audience}</code>"
@@ -62,11 +62,11 @@ async def _send_schedule_for_week(msg: types.Message, date: datetime) -> None:
 @dp.message(CommandStart())
 async def cmd_start(msg: types.Message) -> None:
     await msg.answer("""
-Привет! Этот бот покажет расписание для прикладной информатики :)
+Привет! Этот бот покажет распорядок для прикладной информатики :)
 
-/today - узнать расписание на сегодня
-/week - узнать расписание на неделю
-/next_week - узнать расписание на следущюю неделю
+/today - узнать распорядок на сегодня
+/week - узнать распорядок на неделю
+/next_week - узнать распорядок на следущюю неделю
 /time - узнать время занятий
 
 P.S Функционал будет расширяться, если мне не будет лень.
