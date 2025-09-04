@@ -41,6 +41,7 @@ def _parse_response_data(response_data: Any) -> list[Schedule]:
             number=int(raw_lesson["номерЗанятия"]),
             starts_at=raw_lesson["датаНачала"],
             ends_at=raw_lesson["датаОкончания"],
+            audience=raw_lesson["аудитория"]
         )
         lessons_in_day.append(lesson)
 

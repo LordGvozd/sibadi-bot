@@ -9,6 +9,7 @@ class Lesson(BaseModel):
 
     name: str
     number: int
+    audience: str
 
     starts_at: datetime
     ends_at: datetime

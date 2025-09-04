@@ -1,5 +1,7 @@
 from datetime import datetime
 from os import environ
+import calendar
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -19,11 +21,42 @@ def _format_schedule(schedule: Schedule) -> str:
     head = f"Расписание на: <i>{schedule.date.strftime('%d-%m-%Y')}</i>\n\n"
 
     body = "\n".join([
-        f"{lesson.number}) <code>[{lesson.starts_at.strftime('%H:%M')}]</code> <b>{lesson.name.title()}</b> "
+        f"{lesson.number}) <i>[{lesson.starts_at.strftime('%H:%M')}]</i> <b>{lesson.name.title()}</b> <code>{lesson.audience}</code>"
         for lesson in schedule.lessons
     ])
 
     return head + body
+
+def _get_days_in_month(date: datetime) -> int:
+    month_number = date.month
+    year_number = date.year
+
+    return calendar.monthrange(year_number, month_number)[1]
+
+
+def _find_next_monday(date: datetime) -> datetime:
+    days_in_month = _get_days_in_month(date)
+
+    to_next_monday = date.day + (6 - date.weekday())
+
+    if to_next_monday > days_in_month:
+        to_next_monday -= days_in_month
+    
+    monday = datetime(year=date.year, month=date.month, day=to_next_monday)
+
+    return monday
+
+async def _send_schedule_for_week(msg: types.Message, date: datetime) -> None:
+    schedule_list = get_remain_week_schedule(date)
+
+    if schedule_list:
+        answer_text = "\n\n\n".join([
+            _format_schedule(day) for day in schedule_list
+        ])
+
+        await msg.answer(answer_text)
+        return
+    await msg.answer("Похоже, вы свободны до конца недели :)")
 
 
 @dp.message(CommandStart())
@@ -33,6 +66,8 @@ async def cmd_start(msg: types.Message) -> None:
 
 /today - узнать расписание на сегодня
 /week - узнать расписание на неделю
+/next_week - узнать расписание на следущюю неделю
+/time - узнать время занятий
 
 P.S Функционал будет расширяться, если мне не будет лень.
     """)
@@ -48,20 +83,28 @@ async def cmd_today(msg: types.Message) -> None:
 
 @dp.message(Command("week"))
 async def cmd_week(msg: types.Message) -> None:
-    schedule_list = get_remain_week_schedule(datetime.now())
+    await _send_schedule_for_week(msg, datetime.now())
 
-    if schedule_list:
-        answer_text = "\n\n\n".join([
-            _format_schedule(day) for day in schedule_list
-        ])
 
-        await msg.answer(answer_text)
-        return
-    await msg.answer("Похоже, вы свободны до конца недели :)")
+@dp.message(Command("next_week"))
+async def cmd_next_week(msg: types.Message) -> None:
+    today = datetime.now()
+    next_monday = _find_next_monday(today)
+    await _send_schedule_for_week(msg, next_monday)
+
+@dp.message(Command("time"))
+async def cmd_time(msg: types.Message) -> None:
+    await msg.answer("""
+1) 8:20 - 9:50
+2) 10:00 - 11:30
+3) 11:40 - 13:10
+4) 13:45 - 15:15
+5) 15:25 - 16:55
+6) 17:05 - 18:35
+    """)
+
 
 async def run_bot():
     """Запуск бота."""
     await dp.start_polling(bot)
-
-
 
