@@ -20,6 +20,7 @@ def _datetime_to_string(date: datetime) -> str:
 
 
 def _parse_response_data(response_data: Any) -> list[Schedule]:
+    print("Parsed")
     schedule_by_day: list[Schedule] = []
 
     lessons_in_day: list[Lesson] = []

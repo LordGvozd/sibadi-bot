@@ -1,5 +1,6 @@
 from datetime import datetime
 from os import environ
+from functools import lru_cache
 import calendar
 
 from aiogram import Bot, Dispatcher, types
@@ -19,7 +20,7 @@ bot = Bot(
 )
 dp = Dispatcher()
 
-
+@lru_cache()
 def _format_schedule(schedule: Schedule) -> str:
     head = f"распорядок на: <i>{schedule.date.strftime('%d-%m-%Y')}</i>\n\n"
 
@@ -30,14 +31,14 @@ def _format_schedule(schedule: Schedule) -> str:
 
     return head + body
 
-
+@lru_cache()
 def _get_days_in_month(date: datetime) -> int:
     month_number = date.month
     year_number = date.year
 
     return calendar.monthrange(year_number, month_number)[1]
 
-
+@lru_cache()
 def _find_next_monday(date: datetime) -> datetime:
     days_in_month = _get_days_in_month(date)
 
