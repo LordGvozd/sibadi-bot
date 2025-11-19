@@ -13,7 +13,10 @@ from src.parser import get_day_schedule, get_remain_week_schedule
 
 load_dotenv()
 
-bot = Bot(token=environ["token"], default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(
+    token=environ["token"],
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+)
 dp = Dispatcher()
 
 
@@ -26,6 +29,7 @@ def _format_schedule(schedule: Schedule) -> str:
     ])
 
     return head + body
+
 
 def _get_days_in_month(date: datetime) -> int:
     month_number = date.month
@@ -41,10 +45,11 @@ def _find_next_monday(date: datetime) -> datetime:
 
     if to_next_monday > days_in_month:
         to_next_monday -= days_in_month
-    
+
     monday = datetime(year=date.year, month=date.month, day=to_next_monday)
 
     return monday
+
 
 async def _send_schedule_for_week(msg: types.Message, date: datetime) -> None:
     schedule_list = get_remain_week_schedule(date)
@@ -81,6 +86,7 @@ async def cmd_today(msg: types.Message) -> None:
         return
     await msg.answer("Похоже, сегодня нет занятий")
 
+
 @dp.message(Command("week"))
 async def cmd_week(msg: types.Message) -> None:
     await _send_schedule_for_week(msg, datetime.now())
@@ -91,6 +97,7 @@ async def cmd_next_week(msg: types.Message) -> None:
     today = datetime.now()
     next_monday = _find_next_monday(today)
     await _send_schedule_for_week(msg, next_monday)
+
 
 @dp.message(Command("time"))
 async def cmd_time(msg: types.Message) -> None:
@@ -104,7 +111,11 @@ async def cmd_time(msg: types.Message) -> None:
     """)
 
 
+@dp.message(Command("version"))
+async def cmd_version(msg: types.Message) -> None:
+    await msg.answer("0.0.1")
+
+
 async def run_bot():
     """Запуск бота."""
     await dp.start_polling(bot)
-
