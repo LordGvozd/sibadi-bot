@@ -63,6 +63,11 @@ async def _send_schedule_for_week(msg: types.Message, date: datetime) -> None:
         return
     await msg.answer("Похоже, вы свободны до конца недели :)")
 
+def get_today() -> datetime:
+    now = datetime.now()
+
+    return now.replace(hour=0, minute=1, second=0, microsecond=1)
+
 
 @dp.message(CommandStart())
 async def cmd_start(msg: types.Message) -> None:
@@ -80,7 +85,7 @@ P.S Функционал будет расширяться, если мне не
 
 @dp.message(Command("today"))
 async def cmd_today(msg: types.Message) -> None:
-    schedule = get_day_schedule(datetime.now())
+    schedule = get_day_schedule(get_today())
     if schedule:
         await msg.answer(_format_schedule(schedule))
         return
@@ -94,7 +99,7 @@ async def cmd_week(msg: types.Message) -> None:
 
 @dp.message(Command("next_week"))
 async def cmd_next_week(msg: types.Message) -> None:
-    today = datetime.now()
+    today = get_today()
     next_monday = _find_next_monday(today)
     await _send_schedule_for_week(msg, next_monday)
 
