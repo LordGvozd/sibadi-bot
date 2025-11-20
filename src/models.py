@@ -22,6 +22,5 @@ class Schedule(BaseModel):
 
     lessons: list[Lesson]
 
-
     def __hash__(self) -> int:
         return hash(self.date)

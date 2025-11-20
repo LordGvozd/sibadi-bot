@@ -12,7 +12,7 @@ URL_TEMPLATE: Final[str] = (
     "https://umu.sibadi.org/api/Rasp?idGroup=14720&sdate={date}"
 )
 
-cache = TTLCache(maxsize=100, ttl=24*60*60)
+cache = TTLCache(maxsize=100, ttl=24 * 60 * 60)
 
 
 def _datetime_to_string(date: datetime) -> str:
@@ -49,6 +49,7 @@ def _parse_response_data(response_data: Any) -> list[Schedule]:
         lessons_in_day.append(lesson)
 
     return schedule_by_day
+
 
 @cached(cache)
 def get_remain_week_schedule(date: datetime) -> list[Schedule] | None:
