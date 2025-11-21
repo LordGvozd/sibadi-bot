@@ -59,6 +59,12 @@ def get_today() -> datetime:
 
     return now.replace(hour=0, minute=1, second=0, microsecond=1)
 
+@lru_cache
+def get_tommorow(day: datetime) -> datetime:
+    tommorow_unix = day.timestamp() + (24 * 60 * 60)
+    return datetime.fromtimestamp(tommorow_unix)
+
+
 
 async def today_schedule_gettter(**kwargs) -> dict[Literal["schedule"], str]:
     schedule = get_day_schedule(get_today())
@@ -75,4 +81,15 @@ async def next_week_getter(**kwargs) -> dict[Literal["schedule"], str]:
     today = get_today()
     next_monday = _find_next_monday(today)
     return {"schedule": _get_schedule_for_week(next_monday)}
+
+
+async def tommorow_schedule_getter(**kwargs) -> dict[Literal["schedule"], str]:
+    tommorow = get_tommorow(get_today())
+    schedule = get_day_schedule(tommorow)
+
+    if schedule:
+        return {"schedule": _format_schedule(schedule)}
+       
+    return {"schedule": "Похоже, у вас завтра нет занятий"}
+    
 
