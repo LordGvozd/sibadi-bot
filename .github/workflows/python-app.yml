@@ -29,16 +29,5 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
-      - name: Mypy
-        run: uv run mypy .
-
-      - name: Ruff
-        run: |
-          uv run ruff check --exit-non-zero-on-fix
-          uv run ruff format --check --fix 
-      - name: WPS
-        run: uv run flake8 . --select=WPS
-
-
-      - name: Run tests
-        run: uv run pytest tests
+      - name: CI
+        run: make ci

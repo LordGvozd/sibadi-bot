@@ -1,6 +1,8 @@
 """Модели данных."""
 
 from datetime import datetime
+from typing import override
+
 from pydantic import BaseModel
 
 
@@ -22,5 +24,8 @@ class Schedule(BaseModel):
 
     lessons: list[Lesson]
 
+    @override
     def __hash__(self) -> int:
+        """Хэширует расписание по урокам, необходим для кэша."""
+        # ToDo: Make normal hash function
         return hash(self.date)

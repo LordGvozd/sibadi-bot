@@ -1,18 +1,18 @@
 from datetime import datetime
-import string
 from typing import Any, Final
-from cachetools import cached, TTLCache
 
 import requests
+from cachetools import TTLCache, cached
 
 from src.models import Lesson, Schedule
-
 
 URL_TEMPLATE: Final[str] = (
     "https://umu.sibadi.org/api/Rasp?idGroup=14720&sdate={date}"
 )
 
-cache = TTLCache(maxsize=100, ttl=24 * 60 * 60)
+cache: TTLCache[datetime, list[Schedule] | None] = TTLCache(
+    maxsize=100, ttl=24 * 60 * 60
+)
 
 
 def _datetime_to_string(date: datetime) -> str:
@@ -20,7 +20,6 @@ def _datetime_to_string(date: datetime) -> str:
 
 
 def _parse_response_data(response_data: Any) -> list[Schedule]:
-    print("Parsed")
     schedule_by_day: list[Schedule] = []
 
     lessons_in_day: list[Lesson] = []
@@ -56,13 +55,13 @@ def get_remain_week_schedule(date: datetime) -> list[Schedule] | None:
     """Получает расписание на оставшуююся неделю."""
     formatted_datetime = _datetime_to_string(date)
 
-    response = requests.get(URL_TEMPLATE.format(date=formatted_datetime))
+    response = requests.get(
+        URL_TEMPLATE.format(date=formatted_datetime), timeout=5
+    )
 
     response_data = response.json()
 
-    schedule_by_days = _parse_response_data(response_data)
-
-    return schedule_by_days
+    return _parse_response_data(response_data)
 
 
 def get_day_schedule(date: datetime) -> Schedule | None:
@@ -70,8 +69,9 @@ def get_day_schedule(date: datetime) -> Schedule | None:
     schedule_by_days = get_remain_week_schedule(date)
 
     if not schedule_by_days:
-        return
+        return None
 
     for day in schedule_by_days:
         if day.date.day == date.day:
             return day
+    return None

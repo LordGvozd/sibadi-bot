@@ -1,10 +1,19 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, Window
-from aiogram_dialog.widgets.kbd import Back, Button, Column, Row, SwitchTo
+from aiogram_dialog.widgets.kbd import Column, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 
-from src.telegram.logic import next_week_getter, remain_week_getter, today_schedule_gettter, tommorow_schedule_getter
+from src.telegram.constants import SCHEDULE_KEY, TIME_INFO
+from src.telegram.logic import (
+    next_week_getter,
+    remain_week_getter,
+    today_schedule_gettter,
+    tommorow_schedule_getter,
+)
 from src.telegram.states import BotState
 
+SCHEDULE_FORMAT_STRING: Final[str] = f"{{{SCHEDULE_KEY}}}"
 back = SwitchTo(Const("Меню"), "menu", state=BotState.menu)
 
 menu_window = Window(
@@ -12,55 +21,52 @@ menu_window = Window(
     Column(
         SwitchTo(Const("Сегодня"), id="today", state=BotState.today),
         SwitchTo(Const("Завтра"), id="tommorow", state=BotState.tommorow),
-        SwitchTo(Const("Текущяя неделя"), id="remain_week", state=BotState.remain_week),
-        SwitchTo(Const("Следущяя неделя"), id="next_week", state=BotState.next_week),
+        SwitchTo(
+            Const("Текущяя неделя"),
+            id="remain_week",
+            state=BotState.remain_week,
+        ),
+        SwitchTo(
+            Const("Следущяя неделя"), id="next_week", state=BotState.next_week
+        ),
         SwitchTo(Const("Звонки"), id="time", state=BotState.time),
     ),
-
     state=BotState.menu,
 )
 
 time_window = Window(
-    Const("""
-1) 8:20 - 9:50
-2) 10:00 - 11:30
-3) 11:40 - 13:10
-4) 13:45 - 15:15
-5) 15:25 - 16:55
-6) 17:05 - 18:35
-    """),
+    Const(TIME_INFO),
     back,
-    state=BotState.time
+    state=BotState.time,
 )
 
 today_window = Window(
-    Format("{schedule}"),
+    Format(SCHEDULE_FORMAT_STRING),
     back,
     getter=today_schedule_gettter,
-    state=BotState.today
+    state=BotState.today,
 )
 
 remain_week_window = Window(
-    Format("{schedule}"),
+    Format(SCHEDULE_FORMAT_STRING),
     back,
     getter=remain_week_getter,
-    state=BotState.remain_week
+    state=BotState.remain_week,
 )
 
 next_week_window = Window(
-    Format("{schedule}"),
+    Format(SCHEDULE_FORMAT_STRING),
     back,
     getter=next_week_getter,
-    state=BotState.next_week
+    state=BotState.next_week,
 )
 
 tommorow_window = Window(
-    Format("{schedule}"),
+    Format(SCHEDULE_FORMAT_STRING),
     back,
     getter=tommorow_schedule_getter,
-    state=BotState.tommorow
+    state=BotState.tommorow,
 )
-
 
 
 main_dialog = Dialog(
@@ -71,5 +77,3 @@ main_dialog = Dialog(
     remain_week_window,
     next_week_window,
 )
-
-
