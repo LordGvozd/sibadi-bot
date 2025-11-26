@@ -29,3 +29,5 @@ class Schedule(BaseModel):
         """Хэширует расписание по урокам, необходим для кэша."""
         # ToDo: Make normal hash function
         return hash(self.date)
+
+

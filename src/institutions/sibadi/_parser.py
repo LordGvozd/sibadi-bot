@@ -1,13 +1,17 @@
 from datetime import datetime
 from typing import Any, Final
+from functools import lru_cache
 
 import requests
 from cachetools import TTLCache, cached
 
 from src.models import Lesson, Schedule
 
-URL_TEMPLATE: Final[str] = (
-    "https://umu.sibadi.org/api/Rasp?idGroup=14720&sdate={date}"
+SCHEDULE_URL_TEMPLATE: Final[str] = (
+    "https://umu.sibadi.org/api/Rasp?idGroup={group_id}&sdate={date}"
+)
+GROUPS_DICT_URL: Final[str] = (
+    "https://umu.sibadi.org/api/raspGrouplist?year=2025-2026"
 )
 
 cache: TTLCache[datetime, list[Schedule] | None] = TTLCache(
@@ -51,12 +55,12 @@ def _parse_response_data(response_data: Any) -> list[Schedule]:
 
 
 @cached(cache)
-def get_remain_week_schedule(date: datetime) -> list[Schedule] | None:
+def get_remain_week_schedule(group_id: str, date: datetime) -> list[Schedule] | None:
     """Получает расписание на оставшуююся неделю."""
     formatted_datetime = _datetime_to_string(date)
 
     response = requests.get(
-        URL_TEMPLATE.format(date=formatted_datetime), timeout=5
+        SCHEDULE_URL_TEMPLATE.format(group_id=group_id, date=formatted_datetime), timeout=5
     )
 
     response_data = response.json()
@@ -64,9 +68,29 @@ def get_remain_week_schedule(date: datetime) -> list[Schedule] | None:
     return _parse_response_data(response_data)
 
 
-def get_day_schedule(date: datetime) -> Schedule | None:
+@lru_cache(maxsize=500)
+def get_groups_dict() -> dict[str, str]:
+    """Возвращае словарь типа {group_name: group_id, ...}. """
+    groups_dict = requests.get(GROUPS_DICT_URL)
+
+    if groups_dict.status_code == 200:
+        raw = groups_dict.json()
+
+        new_dict = {}
+
+        for value in raw["data"]:
+            new_dict[value["name"].lower().replace("-", "")] = value["id"]
+
+        
+        return new_dict
+
+    raise OSError("Cant get groups list") # ToDo: make special expceptions
+
+
+
+def get_day_schedule(group_id: str, date: datetime) -> Schedule | None:
     """Получает расписание с сайта."""
-    schedule_by_days = get_remain_week_schedule(date)
+    schedule_by_days = get_remain_week_schedule(group_id, date)
 
     if not schedule_by_days:
         return None

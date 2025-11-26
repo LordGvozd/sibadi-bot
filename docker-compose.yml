@@ -1,7 +1,51 @@
 services:
+  mongo:
+    image: mongo:latest
+    container_name: sibadi_mongo
+    restart: unless-stopped
+    env_file:
+      .env 
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - net
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo_express_sibadi
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongo
+    networks:
+      - net
+    
+
   bot:
     container_name: sibadi_bot
     build:
       context: .
     env_file: ./.env
+    depends_on:
+      - mongo
     restart: always
+
+volumes:
+  mongodb_data:
+
+networks:
+  net:
+    driver: bridge
