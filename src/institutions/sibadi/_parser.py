@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Any, Final
 from functools import lru_cache
+from typing import Any, Final
 
 import requests
 from cachetools import TTLCache, cached
@@ -40,7 +40,6 @@ def _parse_response_data(response_data: Any) -> list[Schedule]:
                 )
 
             lessons_in_day = []
-            current_day_date = raw_lesson["дата"]
 
         lesson = Lesson(
             name=raw_lesson["дисциплина"],
@@ -50,17 +49,30 @@ def _parse_response_data(response_data: Any) -> list[Schedule]:
             audience=raw_lesson["аудитория"],
         )
         lessons_in_day.append(lesson)
+        current_day_date = raw_lesson["дата"]
+    if lessons_in_day:
+        schedule_by_day.append(
+            Schedule(
+                date=datetime.fromisoformat(current_day_date),
+                lessons=lessons_in_day,
+            )
+        )
 
     return schedule_by_day
 
 
 @cached(cache)
-def get_remain_week_schedule(group_id: str, date: datetime) -> list[Schedule] | None:
+def get_remain_week_schedule(
+    group_id: str, date: datetime
+) -> list[Schedule] | None:
     """Получает расписание на оставшуююся неделю."""
     formatted_datetime = _datetime_to_string(date)
 
     response = requests.get(
-        SCHEDULE_URL_TEMPLATE.format(group_id=group_id, date=formatted_datetime), timeout=5
+        SCHEDULE_URL_TEMPLATE.format(
+            group_id=group_id, date=formatted_datetime
+        ),
+        timeout=5,
     )
 
     response_data = response.json()
@@ -70,7 +82,7 @@ def get_remain_week_schedule(group_id: str, date: datetime) -> list[Schedule] | 
 
 @lru_cache(maxsize=500)
 def get_groups_dict() -> dict[str, str]:
-    """Возвращае словарь типа {group_name: group_id, ...}. """
+    """Возвращае словарь типа {group_name: group_id, ...}."""
     groups_dict = requests.get(GROUPS_DICT_URL)
 
     if groups_dict.status_code == 200:
@@ -81,11 +93,9 @@ def get_groups_dict() -> dict[str, str]:
         for value in raw["data"]:
             new_dict[value["name"].lower().replace("-", "")] = value["id"]
 
-        
         return new_dict
 
-    raise OSError("Cant get groups list") # ToDo: make special expceptions
-
+    raise OSError("Cant get groups list")  # ToDo: make special expceptions
 
 
 def get_day_schedule(group_id: str, date: datetime) -> Schedule | None:
@@ -99,3 +109,7 @@ def get_day_schedule(group_id: str, date: datetime) -> Schedule | None:
         if day.date.day == date.day:
             return day
     return None
+
+
+if __name__ == "__main__":
+    ...

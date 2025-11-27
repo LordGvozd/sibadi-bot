@@ -1,15 +1,13 @@
-
-
 from abc import ABC, abstractmethod
 
 from src.abstractions import Student
 
 
 class AbstractStudentRepo(ABC):
-    @abstractmethod 
+    @abstractmethod
     async def get_student_by_id[S: Student](self, tg_id: int) -> S | None: ...
 
-    @abstractmethod 
+    @abstractmethod
     async def add_student[S: Student](self, student: S) -> None: ...
 
 
@@ -22,7 +20,6 @@ class InMemoryRepo(AbstractStudentRepo):
             if tg_id == student.tg_id:
                 return student
         return None
-    
+
     async def add_student[S: Student](self, student: S) -> None:
         self._students.append(student)
-

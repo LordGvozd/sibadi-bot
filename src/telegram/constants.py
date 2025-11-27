@@ -5,4 +5,3 @@ from typing import Final, Literal
 
 SCHEDULE_KEY: Final[Literal["schedule"]] = "schedule"
 type ScheduleDictType = dict[Literal["schedule"], str]
-

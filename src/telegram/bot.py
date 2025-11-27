@@ -3,13 +3,13 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters.command import CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram_dialog import DialogManager, StartMode, setup_dialogs
 from dotenv import load_dotenv
 
 from src.config import settings
-from src.telegram.menu import main_router, open_menu
 from src.repo import AbstractStudentRepo, InMemoryRepo
-from src.telegram.registration import start_registration_process, router
+from src.telegram.menu import main_router
+from src.telegram.registration import router, start_registration_process
+
 # from src.telegram.states import BotState, RegisterState
 # from src.telegram.windows import main_dialog
 
@@ -30,10 +30,10 @@ dp.include_router(main_router)
 
 
 @dp.message(CommandStart())
-async def start(message: types.Message, state: FSMContext, repo: AbstractStudentRepo) -> None:
+async def start(
+    message: types.Message, state: FSMContext, repo: AbstractStudentRepo
+) -> None:
     await start_registration_process(message, state)
-
-
 
 
 async def run_bot() -> None:
