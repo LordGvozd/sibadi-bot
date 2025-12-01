@@ -4,7 +4,7 @@ from datetime import datetime, time
 from enum import StrEnum, unique
 from typing import Protocol, runtime_checkable
 
-from src.models import *
+from src.models import Schedule
 
 
 @unique
@@ -19,24 +19,24 @@ class Student(Protocol):
 
 
 @runtime_checkable
-class ScheduleGetter[S: Student](Protocol):
+class ScheduleGetter[ConcreteStudent: Student](Protocol):
     async def get_day_schedule_for(
-        self, student: S, date: datetime
+        self, student: ConcreteStudent, date: datetime
     ) -> Schedule | None: ...
 
     async def get_week_schedule_for(
-        self, student: S, date: datetime
+        self, student: ConcreteStudent, date: datetime
     ) -> list[Schedule] | None: ...
 
 
-class Institution[S: Student](ABC):
+class Institution[ConcreteStudent: Student](ABC):
     @property
     @abstractmethod
     def name(self) -> InstitutionNames: ...
 
     @property
     @abstractmethod
-    def schedule_getter(self) -> ScheduleGetter[S]: ...
+    def schedule_getter(self) -> ScheduleGetter[ConcreteStudent]: ...
 
     @property
     @abstractmethod

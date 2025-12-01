@@ -20,14 +20,14 @@ class SibadiStudent(msgspec.Struct):
     group_id: str
 
 
-class SibadiScheduleGetter[S: SibadiStudent]:
+class SibadiScheduleGetter:
     async def get_day_schedule_for(
-        self, student: S, date: datetime
+        self, student: SibadiStudent, date: datetime
     ) -> Schedule | None:
         return get_day_schedule(student.group_id, date)
 
     async def get_week_schedule_for(
-        self, student: S, date: datetime
+        self, student: SibadiStudent, date: datetime
     ) -> list[Schedule] | None:
         return get_remain_week_schedule(student.group_id, date)
 
@@ -43,11 +43,11 @@ class Sibadi[S: SibadiStudent](Institution[SibadiStudent]):
 
     @property
     def get_timetable(self) -> tuple[tuple[time, time], ...]:
-        return (
-            (time(8, 20), time(9, 50)),
-            (time(10, 00), time(11, 30)),
-            (time(11, 40), time(13, 10)),
-            (time(13, 45), time(15, 15)),
-            (time(15, 25), time(16, 55)),
-            (time(17, 5), time(18, 35)),
+        return (  # noqa: WPS227
+            (time(8, 20), time(9, 50)),  # noqa: WPS432
+            (time(10, 00), time(11, 30)),  # noqa: WPS432
+            (time(11, 40), time(13, 10)),  # noqa: WPS432
+            (time(13, 45), time(15, 15)),  # noqa: WPS432
+            (time(15, 25), time(16, 55)),  # noqa: WPS432
+            (time(17, 5), time(18, 35)),  # noqa: WPS432
         )

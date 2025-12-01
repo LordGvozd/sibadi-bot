@@ -8,10 +8,11 @@ from dotenv import load_dotenv
 from src.config import settings
 from src.repo import AbstractStudentRepo, InMemoryRepo
 from src.telegram.menu import main_router
-from src.telegram.registration import router, start_registration_process
-
-# from src.telegram.states import BotState, RegisterState
-# from src.telegram.windows import main_dialog
+from src.telegram.registration.registration import (
+    router,
+    start_registration_process,
+)
+from src.telegram.registration.sibadi_registration import sibadi_router
 
 load_dotenv()
 
@@ -27,6 +28,7 @@ dp["repo"] = repo
 
 dp.include_router(router)
 dp.include_router(main_router)
+dp.include_router(sibadi_router)
 
 
 @dp.message(CommandStart())

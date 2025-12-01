@@ -1,6 +1,5 @@
-from datetime import time
-
 from aiogram import Router
+from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
@@ -12,8 +11,12 @@ from aiogram.types import (
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.abstractions import InstitutionNames, Student
+from src.formaters import (
+    format_schedule,
+    format_schedule_for_week,
+    format_timetable,
+)
 from src.institutions.sibadi.sibadi import Sibadi, SibadiStudent
-from src.telegram.logic import format_schedule, format_schedule_for_week
 from src.telegram.time_utils import find_next_monday, get_today, get_tommorow
 
 institutions = {InstitutionNames.SIBADI.value: Sibadi()}
@@ -30,7 +33,6 @@ back_to_menu_kb = InlineKeyboardMarkup(
 
 
 async def open_menu(msg: Message, state: FSMContext) -> None:
-    print("SIGMA", msg.text)
     builder = InlineKeyboardBuilder()
     builder.max_width = 1
 
@@ -61,18 +63,12 @@ async def _get_student_from_state(tg_id: int, state: FSMContext) -> Student:
             return SibadiStudent(tg_id=str(tg_id), group_id=group_id)
 
 
-def format_timetable(timetable: tuple[tuple[time, time], ...]) -> str:
-    text = ""
-
-    for index, lesson in enumerate(timetable):
-        text += f"{index + 1}) {lesson[0].hour}:{lesson[0].minute}-{lesson[1].hour}:{lesson[1].minute}\n"
-
-    return text
-
-
+@main_router.callback_query(CallbackData.filter("menu"))
 @main_router.callback_query()
 async def process_menu_button(query: CallbackQuery, state: FSMContext) -> None:
     inst_raw = await state.get_value("inst")
+    if not isinstance(query.message, Message):
+        return
     if inst_raw is None:
         await query.message.answer(
             "у вас не выбрано учебное заведение. Введите /start!"
@@ -84,28 +80,24 @@ async def process_menu_button(query: CallbackQuery, state: FSMContext) -> None:
     match query.data:
         case "menu":
             await open_menu(query.message, state)
-            return
         case "time":
             timetable = inst.get_timetable
 
             await _edit_msg_to_action(
                 format_timetable(timetable), query.message
             )
-            return
         case "today":
             today = await inst.schedule_getter.get_day_schedule_for(
                 student, get_today()
             )
 
             await _edit_msg_to_action(format_schedule(today), query.message)
-            return
         case "tommorow":
             today = await inst.schedule_getter.get_day_schedule_for(
                 student, get_tommorow(get_today())
             )
 
             await _edit_msg_to_action(format_schedule(today), query.message)
-            return
 
         case "remain_week":
             remain_week = await inst.schedule_getter.get_week_schedule_for(
@@ -115,7 +107,6 @@ async def process_menu_button(query: CallbackQuery, state: FSMContext) -> None:
             await _edit_msg_to_action(
                 format_schedule_for_week(remain_week), query.message
             )
-            return
 
         case "next_week":
             next_week = await inst.schedule_getter.get_week_schedule_for(
@@ -125,6 +116,5 @@ async def process_menu_button(query: CallbackQuery, state: FSMContext) -> None:
             await _edit_msg_to_action(
                 format_schedule_for_week(next_week), query.message
             )
-            return
         case _:
             await _edit_msg_to_action("Что-то не то...", query.message)

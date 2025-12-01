@@ -70,3 +70,5 @@ ignore = [
   "RUF029",
   "TRY003",  # long exception messages from `tryceratops`
 ]
+
+external = ["WPS"]

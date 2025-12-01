@@ -83,7 +83,7 @@ def get_remain_week_schedule(
 @lru_cache(maxsize=500)
 def get_groups_dict() -> dict[str, str]:
     """Возвращае словарь типа {group_name: group_id, ...}."""
-    groups_dict = requests.get(GROUPS_DICT_URL)
+    groups_dict = requests.get(GROUPS_DICT_URL, timeout=5)
 
     if groups_dict.status_code == 200:
         raw = groups_dict.json()
