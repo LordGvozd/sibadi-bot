@@ -1,5 +1,6 @@
 from datetime import datetime
 from functools import lru_cache
+from http import HTTPStatus
 from typing import Any, Final
 
 import requests
@@ -13,6 +14,7 @@ SCHEDULE_URL_TEMPLATE: Final[str] = (
 GROUPS_DICT_URL: Final[str] = (
     "https://umu.sibadi.org/api/raspGrouplist?year=2025-2026"
 )
+
 
 cache: TTLCache[datetime, list[Schedule] | None] = TTLCache(
     maxsize=100, ttl=24 * 60 * 60
@@ -80,18 +82,17 @@ def get_remain_week_schedule(
     return _parse_response_data(response_data)
 
 
-@lru_cache(maxsize=500)
+@lru_cache
 def get_groups_dict() -> dict[str, str]:
     """Возвращае словарь типа {group_name: group_id, ...}."""
     groups_dict = requests.get(GROUPS_DICT_URL, timeout=5)
 
-    if groups_dict.status_code == 200:
-        raw = groups_dict.json()
-
+    if groups_dict.status_code == HTTPStatus.OK:
         new_dict = {}
 
-        for value in raw["data"]:
-            new_dict[value["name"].lower().replace("-", "")] = value["id"]
+        for group in groups_dict.json()["data"]:
+            group_name = group["name"].lower().replace("-", "")
+            new_dict[group_name] = group["id"]
 
         return new_dict
 

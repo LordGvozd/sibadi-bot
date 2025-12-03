@@ -7,15 +7,18 @@ DAY_SCHEDULE_TEMPLATE: Final[str] = "Распорядок на: <i>{date}</i>\n"
 LESSON_TEMPLATE: Final[str] = (
     "{number}) <i>[{starts_at}]</i> <b>{name}</b> <code>{audience}</code>"
 )
+LESSON_TIME_TEMPLATE: Final[str] = "{number}) {starts_at}-{ends_at}\n"
 
 
 def format_timetable(timetable: tuple[tuple[time, time], ...]) -> str:
     text = ""
 
-    for index, lesson in enumerate(timetable):
-        text += (
-            f"{index + 1})"
-            f"{lesson[0].hour}:{lesson[0].minute}-{lesson[1].hour}:{lesson[1].minute}\n"
+    for index, lesson in enumerate(timetable):  # noqa: WPS519
+        starts_at = f"{lesson[0].hour}:{lesson[0].minute}"
+        ends_at = f"{lesson[1].hour}:{lesson[1].minute}"
+
+        text += LESSON_TEMPLATE.format(
+            number=index + 1, starts_at=starts_at, ends_at=ends_at
         )
 
     return text

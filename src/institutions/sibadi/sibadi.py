@@ -32,13 +32,13 @@ class SibadiScheduleGetter:
         return get_remain_week_schedule(student.group_id, date)
 
 
-class Sibadi[S: SibadiStudent](Institution[SibadiStudent]):
+class Sibadi(Institution[SibadiStudent]):
     @property
     def name(self) -> InstitutionNames:
         return InstitutionNames.SIBADI
 
     @property
-    def schedule_getter(self) -> ScheduleGetter[S]:
+    def schedule_getter(self) -> ScheduleGetter[SibadiStudent]:
         return SibadiScheduleGetter()
 
     @property
