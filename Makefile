@@ -7,7 +7,7 @@ format:
 lint:
 	uv run ruff format --diff
 	uv run ruff check --exit-non-zero-on-fix 
-	uv run flake8 ./src --select=WPS
+	uv run flake8 ./src --select=WPS --count
 
 .PHONY: types
 types:

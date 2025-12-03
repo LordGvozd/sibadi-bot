@@ -1,4 +1,6 @@
 from datetime import datetime
+from functools import lru_cache
+from http import HTTPStatus
 from typing import Any, Final
 
 import requests
@@ -6,9 +8,13 @@ from cachetools import TTLCache, cached
 
 from src.models import Lesson, Schedule
 
-URL_TEMPLATE: Final[str] = (
-    "https://umu.sibadi.org/api/Rasp?idGroup=14720&sdate={date}"
+SCHEDULE_URL_TEMPLATE: Final[str] = (
+    "https://umu.sibadi.org/api/Rasp?idGroup={group_id}&sdate={date}"
 )
+GROUPS_DICT_URL: Final[str] = (
+    "https://umu.sibadi.org/api/raspGrouplist?year=2025-2026"
+)
+
 
 cache: TTLCache[datetime, list[Schedule] | None] = TTLCache(
     maxsize=100, ttl=24 * 60 * 60
@@ -36,7 +42,6 @@ def _parse_response_data(response_data: Any) -> list[Schedule]:
                 )
 
             lessons_in_day = []
-            current_day_date = raw_lesson["дата"]
 
         lesson = Lesson(
             name=raw_lesson["дисциплина"],
@@ -46,17 +51,30 @@ def _parse_response_data(response_data: Any) -> list[Schedule]:
             audience=raw_lesson["аудитория"],
         )
         lessons_in_day.append(lesson)
+        current_day_date = raw_lesson["дата"]
+    if lessons_in_day:
+        schedule_by_day.append(
+            Schedule(
+                date=datetime.fromisoformat(current_day_date),
+                lessons=lessons_in_day,
+            )
+        )
 
     return schedule_by_day
 
 
 @cached(cache)
-def get_remain_week_schedule(date: datetime) -> list[Schedule] | None:
+def get_remain_week_schedule(
+    group_id: str, date: datetime
+) -> list[Schedule] | None:
     """Получает расписание на оставшуююся неделю."""
     formatted_datetime = _datetime_to_string(date)
 
     response = requests.get(
-        URL_TEMPLATE.format(date=formatted_datetime), timeout=5
+        SCHEDULE_URL_TEMPLATE.format(
+            group_id=group_id, date=formatted_datetime
+        ),
+        timeout=5,
     )
 
     response_data = response.json()
@@ -64,9 +82,26 @@ def get_remain_week_schedule(date: datetime) -> list[Schedule] | None:
     return _parse_response_data(response_data)
 
 
-def get_day_schedule(date: datetime) -> Schedule | None:
+@lru_cache
+def get_groups_dict() -> dict[str, str]:
+    """Возвращае словарь типа {group_name: group_id, ...}."""
+    groups_dict = requests.get(GROUPS_DICT_URL, timeout=5)
+
+    if groups_dict.status_code == HTTPStatus.OK:
+        new_dict = {}
+
+        for group in groups_dict.json()["data"]:
+            group_name = group["name"].lower().replace("-", "")
+            new_dict[group_name] = group["id"]
+
+        return new_dict
+
+    raise OSError("Cant get groups list")  # ToDo: make special expceptions
+
+
+def get_day_schedule(group_id: str, date: datetime) -> Schedule | None:
     """Получает расписание с сайта."""
-    schedule_by_days = get_remain_week_schedule(date)
+    schedule_by_days = get_remain_week_schedule(group_id, date)
 
     if not schedule_by_days:
         return None
@@ -75,3 +110,7 @@ def get_day_schedule(date: datetime) -> Schedule | None:
         if day.date.day == date.day:
             return day
     return None
+
+
+if __name__ == "__main__":
+    ...
