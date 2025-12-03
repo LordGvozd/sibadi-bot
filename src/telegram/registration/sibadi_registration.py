@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
-from menu import back_to_menu_kb
+from src.telegram.menu import back_to_menu_kb
 
 from src.institutions.sibadi._parser import get_groups_dict
 
