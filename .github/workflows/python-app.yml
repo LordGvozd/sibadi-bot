@@ -5,7 +5,7 @@ name: SIBADI bot
 
 on:
   push:
-    branches: [ "master", "dev" ]
+    branches: [ "master" ]
   pull_request:
   
 permissions:
