@@ -46,6 +46,10 @@ async def start_registration_process(
 @router.callback_query(CommonRegistrationState.choose_institution)
 async def test(query: CallbackQuery, state: FSMContext) -> None:
     await state.update_data({"inst": query.data})
+
+    if not isinstance(query.data, str):
+        return
+
     await registration_by_institution[InstitutionNames(query.data)](
         query, state
     )

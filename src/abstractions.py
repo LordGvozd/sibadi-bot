@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Sequence
 from datetime import datetime, time
 from enum import StrEnum, unique
-from typing import Protocol, runtime_checkable
+
+import msgspec
 
 from src.models import Schedule
 
@@ -12,24 +13,27 @@ class InstitutionNames(StrEnum):
     SIBADI = "sibadi"
 
 
-@runtime_checkable
-class Student(Protocol):
+class StudentMeta(msgspec.StructMeta, ABCMeta): ...  # noqa: WPS604
+
+
+class AbstarctStudent(msgspec.Struct, metaclass=StudentMeta):
     tg_id: str
     institution_name: InstitutionNames
 
 
-@runtime_checkable
-class ScheduleGetter[ConcreteStudent: Student](Protocol):
+class ScheduleGetter[ConcreteStudent: AbstarctStudent](ABC):
+    @abstractmethod
     async def get_day_schedule_for(
         self, student: ConcreteStudent, date: datetime
     ) -> Schedule | None: ...
 
+    @abstractmethod
     async def get_week_schedule_for(
         self, student: ConcreteStudent, date: datetime
     ) -> list[Schedule] | None: ...
 
 
-class Institution[ConcreteStudent: Student](ABC):
+class Institution[ConcreteStudent: AbstarctStudent](ABC):
     @property
     @abstractmethod
     def name(self) -> InstitutionNames: ...

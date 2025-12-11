@@ -1,8 +1,8 @@
 from datetime import datetime, time
-
-import msgspec
+from typing import override
 
 from src.abstractions import (
+    AbstarctStudent,
     Institution,
     InstitutionNames,
     ScheduleGetter,
@@ -14,18 +14,21 @@ from src.institutions.sibadi._parser import (
 from src.models import Schedule
 
 
-class SibadiStudent(msgspec.Struct):
+class SibadiStudent(AbstarctStudent):
     tg_id: str
-    institution_name = InstitutionNames.SIBADI
-    group_id: str
+    group_id: str  # type: ignore[misc]
+
+    institution_name: InstitutionNames = InstitutionNames.SIBADI
 
 
-class SibadiScheduleGetter:
+class SibadiScheduleGetter(ScheduleGetter[SibadiStudent]):
+    @override
     async def get_day_schedule_for(
         self, student: SibadiStudent, date: datetime
     ) -> Schedule | None:
         return get_day_schedule(student.group_id, date)
 
+    @override
     async def get_week_schedule_for(
         self, student: SibadiStudent, date: datetime
     ) -> list[Schedule] | None:
@@ -34,14 +37,17 @@ class SibadiScheduleGetter:
 
 class Sibadi(Institution[SibadiStudent]):
     @property
+    @override
     def name(self) -> InstitutionNames:
         return InstitutionNames.SIBADI
 
     @property
+    @override
     def schedule_getter(self) -> ScheduleGetter[SibadiStudent]:
         return SibadiScheduleGetter()
 
     @property
+    @override
     def get_timetable(self) -> tuple[tuple[time, time], ...]:
         return (  # noqa: WPS227
             (time(8, 20), time(9, 50)),  # noqa: WPS432
