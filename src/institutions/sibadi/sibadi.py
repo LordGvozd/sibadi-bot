@@ -2,23 +2,18 @@ from datetime import datetime, time
 from typing import override
 
 from src.abstractions import (
-    AbstarctStudent,
     Institution,
     InstitutionNames,
     ScheduleGetter,
 )
+from src.actions import ActionContainer
 from src.institutions.sibadi._parser import (
     get_day_schedule,
     get_remain_week_schedule,
 )
+from src.institutions.sibadi.actions import sibadi_action_container
+from src.institutions.sibadi.student import SibadiStudent
 from src.models import Schedule
-
-
-class SibadiStudent(AbstarctStudent):
-    tg_id: str
-    group_id: str  # type: ignore[misc]
-
-    institution_name: InstitutionNames = InstitutionNames.SIBADI
 
 
 class SibadiScheduleGetter(ScheduleGetter[SibadiStudent]):
@@ -45,6 +40,11 @@ class Sibadi(Institution[SibadiStudent]):
     @override
     def schedule_getter(self) -> ScheduleGetter[SibadiStudent]:
         return SibadiScheduleGetter()
+
+    @property
+    @override
+    def action_container(self) -> ActionContainer:
+        return sibadi_action_container
 
     @property
     @override

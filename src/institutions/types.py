@@ -1,3 +1,3 @@
-from src.institutions.sibadi.sibadi import SibadiStudent
+from src.institutions.sibadi.student import SibadiStudent
 
-type AnyStudent = SibadiStudent
+AnyStudent = SibadiStudent

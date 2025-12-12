@@ -1,6 +1,1 @@
-from src.actions import Action
-
-
-
-def test_action():
-    ...
+def test_action(): ...

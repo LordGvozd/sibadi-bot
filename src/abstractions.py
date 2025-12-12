@@ -5,6 +5,7 @@ from enum import StrEnum, unique
 
 import msgspec
 
+from src.actions import ActionContainer
 from src.models import Schedule
 
 
@@ -16,7 +17,7 @@ class InstitutionNames(StrEnum):
 class StudentMeta(msgspec.StructMeta, ABCMeta): ...  # noqa: WPS604
 
 
-class AbstarctStudent(msgspec.Struct, metaclass=StudentMeta):
+class AbstarctStudent(msgspec.Struct, kw_only=True, metaclass=StudentMeta):
     tg_id: str
     institution_name: InstitutionNames
 
@@ -45,3 +46,7 @@ class Institution[ConcreteStudent: AbstarctStudent](ABC):
     @property
     @abstractmethod
     def get_timetable(self) -> Sequence[tuple[time, time]]: ...
+
+    @property
+    @abstractmethod
+    def action_container(self) -> ActionContainer: ...
