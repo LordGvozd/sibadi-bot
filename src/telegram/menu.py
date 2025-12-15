@@ -1,4 +1,8 @@
+import asyncio
+from collections.abc import Sequence
 from typing import Any
+
+import rapidfuzz
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -11,7 +15,7 @@ from aiogram.types import (
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.abstractions import Institution, InstitutionNames
-from src.actions import Action, TextParam
+from src.actions import Action, TextFromCollectionParam, TextParam
 from src.formaters import (
     format_schedule,
     format_schedule_for_week,
@@ -128,7 +132,11 @@ async def _get_inst_from_state(msg: Message, state: FSMContext) -> Institution:
 
 
 async def _render_action_result(
-    action: Action, student: AnyStudent, action_params: dict[str, Any], msg: Message, state: FSMContext
+    action: Action,
+    student: AnyStudent,
+    action_params: dict[str, Any],
+    msg: Message,
+    state: FSMContext,
 ) -> None:
     params = {}
     for param_name in action.get_required_params():
@@ -188,6 +196,25 @@ async def action_start(query: CallbackQuery, state: FSMContext) -> None:
     await _render_action_result(action, student, {}, msg, state)
 
 
+def _get_suggestions_sync(
+    target: str, collection: Sequence[str], limit: int = 5
+) -> list[str]:
+    results = rapidfuzz.process.extract(
+        target, collection, scorer=rapidfuzz.fuzz.WRatio, limit=limit
+    )
+    return [result[0] for result in results]
+
+
+async def _get_suggestions_async(
+    target: str, collection: Sequence[str], limit: int = 5
+) -> list[str]:
+    loop = asyncio.get_event_loop()
+
+    return await loop.run_in_executor(
+        None, _get_suggestions_sync, target, collection, limit
+    )
+
+
 @main_router.message(ActionState.set_params)
 async def set_action_param(msg: Message, state: FSMContext) -> None:
     current_param_name = await state.get_value("current_param_name")
@@ -202,13 +229,26 @@ async def set_action_param(msg: Message, state: FSMContext) -> None:
         return
 
     current_param_type = action.get_params()[current_param_name]
+    user_input = str(msg.text)
 
     match current_param_type:
         case TextParam():
-            params = await state.get_value("params", {})
-            params.update({current_param_name: msg.text})
+            ...  # Just dont anythig, all text param will be valid
+        case TextFromCollectionParam():
+            # We must verify, that param value in collectoin, or get some suggestions
+            if user_input not in current_param_type.collection:
+                suggestoins = await _get_suggestions_async(
+                    user_input, current_param_type.collection
+                )
+                answer_text = f"Неправильные данные! Возможно, вы имели ввиду {' или '.join(suggestoins)}?"
 
-            await state.update_data({"params": params})
+                await msg.answer(answer_text)
+                return
+
+    params = await state.get_value("params", {})
+    params.update({current_param_name: user_input})
+
+    await state.update_data({"params": params})
 
     if len(params) == len(action.get_params()):
         await _render_action_result(

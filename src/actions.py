@@ -1,5 +1,6 @@
 import functools
 import inspect
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import (
     Annotated,
@@ -28,10 +29,24 @@ class BaseParam:
 class TextParam(BaseParam): ...
 
 
+@dataclass
+class TextFromCollectionParam(BaseParam):
+    """Value of this param must be in collection."""
+
+    collection: Sequence[str]
+
+
+@dataclass
+class ListParam(BaseParam):
+    """Value of this param choosing from list."""
+
+    list: Sequence[str]
+
+
 class RequireStudent: ...
 
 
-Param = TextParam
+Param = TextParam | TextFromCollectionParam | ListParam
 
 
 class Action:
@@ -77,9 +92,10 @@ class Action:
             self.get_required_params().keys()
         )
 
-
-        if sorted(list(params.keys())) != sorted(all_needed_params):
-            raise Exception(str(all_needed_params) + " ||| " + str(list(params.keys())))
+        if sorted(params.keys()) != sorted(all_needed_params):
+            raise Exception(
+                str(all_needed_params) + " ||| " + str(list(params.keys()))
+            )
 
         return self.command(**params)
 
