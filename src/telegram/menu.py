@@ -15,7 +15,7 @@ from aiogram.types import (
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from src.abstractions import Institution, InstitutionNames
-from src.actions import Action, TextFromCollectionParam, TextParam
+from src.actions import Action, ChoiceParam, Param, TextFromCollectionParam, TextParam
 from src.formaters import (
     format_schedule,
     format_schedule_for_week,
@@ -115,10 +115,32 @@ async def open_action_menu(query: CallbackQuery, state: FSMContext) -> None:
 
 
 async def _get_acion_from_state(
-    action_id: str, msg: Message, state: FSMContext
+    msg: Message, state: FSMContext
 ) -> Action | None:
+    action_id = await state.get_value("action_id")
+    if action_id is None:
+        return 
+
     inst = await _get_inst_from_state(msg, state)
     return inst.action_container.get_action(action_id)
+
+
+async def _get_current_param_from_state(msg: Message, state: FSMContext) -> tuple[str, Param]:
+    action = await _get_acion_from_state(msg, state)
+
+    current_param_name = await state.get_value("current_param_name")
+    if not current_param_name:
+        raise Exception
+
+    action = await _get_acion_from_state(msg, state)
+
+    if not action:
+        raise Exception
+
+    current_param_type = action.get_params()[current_param_name]
+
+    return str(current_param_name), current_param_type
+    
 
 
 async def _get_inst_from_state(msg: Message, state: FSMContext) -> Institution:
@@ -145,8 +167,14 @@ async def _render_action_result(
     params.update(action_params)
 
     action_result = action.run_action(**params)
+
     await state.set_state(BaseStates.main)
+    await state.update_data(params=None)
+
     await msg.answer(text=action_result, reply_markup=back_to_menu_kb)
+
+
+
 
 
 async def _render_set_param(
@@ -157,15 +185,26 @@ async def _render_set_param(
     msg: Message,
     state: FSMContext,
 ) -> None:
-    current_param = list(action.get_params().items())[param_index]
+    current_param_id, current_param = list(action.get_params().items())[param_index]
 
     await state.set_state(ActionState.set_params)
 
-    await state.update_data({"current_param_name": current_param[0]})
+    await state.update_data({"current_param_name": current_param_id})
     await state.update_data({"action_id": action_id})
-    await state.update_data({"params": {}})
 
-    await msg.edit_text(text=f"Введите {current_param[1].display_name}:")
+    kb = None
+
+    if isinstance(current_param, ChoiceParam):
+        builder = InlineKeyboardBuilder()
+        
+        for index, variant in enumerate(current_param.variants):
+            builder.button(text=variant.title(), callback_data=str(index))
+        kb = builder.as_markup()
+    
+    if msg.from_user and msg.from_user.is_bot:
+        await msg.edit_text(text=f"Введите {current_param.display_name}:", reply_markup=kb)
+    else:
+        await msg.answer(text=f"Введите {current_param.display_name}:", reply_markup=kb)
 
 
 @main_router.callback_query(F.data.startswith("a."))
@@ -214,23 +253,7 @@ async def _get_suggestions_async(
         None, _get_suggestions_sync, target, collection, limit
     )
 
-
-@main_router.message(ActionState.set_params)
-async def set_action_param(msg: Message, state: FSMContext) -> None:
-    current_param_name = await state.get_value("current_param_name")
-    action_id = await state.get_value("action_id")
-
-    if not (current_param_name and action_id):
-        return
-
-    action = await _get_acion_from_state(action_id, msg, state)
-
-    if not action:
-        return
-
-    current_param_type = action.get_params()[current_param_name]
-    user_input = str(msg.text)
-
+async def _verify_param(current_param_type: Param, user_input: str, msg: Message) -> bool:
     match current_param_type:
         case TextParam():
             ...  # Just dont anythig, all text param will be valid
@@ -243,13 +266,56 @@ async def set_action_param(msg: Message, state: FSMContext) -> None:
                 answer_text = f"Неправильные данные! Возможно, вы имели ввиду {' или '.join(suggestoins)}?"
 
                 await msg.answer(answer_text)
-                return
+                return False
+        case ChoiceParam():
+            if user_input not in current_param_type.variants:
+                await msg.answer("Ты что сделал чорт?")
+                return False
+    return True
 
-    params = await state.get_value("params", {})
-    params.update({current_param_name: user_input})
+@main_router.message(ActionState.set_params)
+async def set_param_text_based(msg: Message, state: FSMContext) -> None:
+    if not msg.text:
+        await msg.answer("Пожалуйста, отправь текст и мне пиво!")
+        return
+    await _set_action_param(msg.text, msg, state)
 
-    await state.update_data({"params": params})
+@main_router.callback_query(ActionState.set_params)
+async def set_param_query_based(query: CallbackQuery, state: FSMContext) -> None:
+    msg = _get_msg(query)
+    
+    _, current_param_type = await _get_current_param_from_state(msg, state)
+    
+    match current_param_type:
+        case ChoiceParam():
+            user_input = current_param_type.variants[int(query.data)]
+        case _:
+            raise Exception
 
+
+    await _set_action_param(user_input, msg, state)
+
+
+async def _set_action_param(user_input: str, msg: Message, state: FSMContext) -> None:
+    action = await _get_acion_from_state(msg, state)
+    action_id = await state.get_value("action_id")
+    
+    if not (action and action_id):
+        return
+
+    current_param_name, current_param_type = await _get_current_param_from_state(msg, state)
+
+    if not await _verify_param(current_param_type, user_input, msg):
+        return
+
+    params = await state.get_value("params", dict())
+
+    params[current_param_name] = user_input
+
+    await state.update_data(params=params)
+    
+
+    
     if len(params) == len(action.get_params()):
         await _render_action_result(
             action,

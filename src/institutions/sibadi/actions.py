@@ -2,6 +2,7 @@ from typing import Annotated
 
 from src.actions import (
     ActionContainer,
+    ChoiceParam,
     RequireStudent,
     TextFromCollectionParam,
     TextParam,
@@ -21,6 +22,7 @@ def test_action(
             collection=["банан", "яблоко", "кукуруз", "арбуз", "помидор"],
         ),
     ],
+    mood: Annotated[str, ChoiceParam("настроение студента", variants=["хорошее", "плохое", "я это все джага джага"])],
     text: Annotated[str, TextParam("текст, который скажет студент")],
 ) -> str:
-    return f"Студент из {student.group_id}, который любит {fruit}, говорит: {text}"
+    return f"Студент из {student.group_id}, его настроение '{mood}', любит {fruit}, и говорит: {text}"

@@ -37,16 +37,16 @@ class TextFromCollectionParam(BaseParam):
 
 
 @dataclass
-class ListParam(BaseParam):
+class ChoiceParam(BaseParam):
     """Value of this param choosing from list."""
 
-    list: Sequence[str]
+    variants: Sequence[str]
 
 
 class RequireStudent: ...
 
 
-Param = TextParam | TextFromCollectionParam | ListParam
+Param = TextParam | TextFromCollectionParam | ChoiceParam
 
 
 class Action:
