@@ -45,7 +45,7 @@ class Institution[ConcreteStudent: AbstarctStudent](ABC):
 
     @property
     @abstractmethod
-    def get_timetable(self) -> Sequence[tuple[time, time]]: ...
+    def get_timetable(self) -> tuple[tuple[time, time], ...]: ...
 
     @property
     @abstractmethod

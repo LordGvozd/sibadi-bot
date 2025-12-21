@@ -1,15 +1,19 @@
 import functools
 import inspect
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import (
     Annotated,
     Any,
     Protocol,
+    TypedDict,
     get_args,
     get_origin,
     runtime_checkable,
 )
+
+from src.suggestions import get_suggestions_async
 
 
 @runtime_checkable
@@ -17,16 +21,41 @@ class ActionCommandSync(Protocol):
     def __call__(self, *args: str) -> str: ...
 
 
+class VerifyResult(TypedDict):
+    verifcation_completed: bool
+    msg: str
+
+
+class RenderData(TypedDict):
+    text: str
+    reply_markup: list[str] | None
+
+
 @dataclass
-class BaseParam:
+class BaseParam(ABC):
     display_name: str
+
+    @abstractmethod
+    async def verify(self, param_value: str) -> VerifyResult:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_render_data(self) -> RenderData:
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.display_name}"
 
 
 @dataclass
-class TextParam(BaseParam): ...
+class TextParam(BaseParam):
+    async def verify(self, param_value: str) -> VerifyResult:
+        return VerifyResult(verifcation_completed=True, msg="OK")
+
+    async def get_render_data(self) -> RenderData:
+        return RenderData(
+            text=f"Введите {self.display_name}", reply_markup=None
+        )
 
 
 @dataclass
@@ -35,18 +64,51 @@ class TextFromCollectionParam(BaseParam):
 
     collection: Sequence[str]
 
+    async def verify(self, param_value: str) -> VerifyResult:
+        if param_value not in self.collection:
+            suggestoins = await get_suggestions_async(
+                param_value, self.collection
+            )
+            answer_text = f"Неправильные данные! Возможно, вы имели ввиду {' или '.join(suggestoins)}?"
+
+            return VerifyResult(verifcation_completed=False, msg=answer_text)
+
+        return VerifyResult(verifcation_completed=True, msg="OK")
+
+    async def get_render_data(self) -> RenderData:
+        return RenderData(
+            text=f"Введите {self.display_name}", reply_markup=None
+        )
+
 
 @dataclass
 class ChoiceParam(BaseParam):
     """Value of this param choosing from list."""
 
     variants: Sequence[str]
+    case_sensetive: bool = False
+
+    async def verify(self, param_value: str) -> VerifyResult:
+        if param_value not in self.variants:
+            return VerifyResult(verifcation_completed=False, msg="Error!")
+        return VerifyResult(verifcation_completed=True, msg="OK")
+
+    async def get_render_data(self) -> RenderData:
+        return RenderData(
+            text=f"Введите {self.display_name}",
+            reply_markup=list(self.variants),
+        )
 
 
 class RequireStudent: ...
 
 
 Param = TextParam | TextFromCollectionParam | ChoiceParam
+
+
+@dataclass
+class TextResult:
+    text: str
 
 
 class Action:

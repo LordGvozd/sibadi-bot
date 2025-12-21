@@ -5,24 +5,24 @@ from src.actions import (
     ChoiceParam,
     RequireStudent,
     TextFromCollectionParam,
-    TextParam,
 )
+from src.institutions.sibadi._parser import get_teachers_dict
 from src.institutions.sibadi.student import SibadiStudent
 
 sibadi_action_container = ActionContainer()
 
 
 @sibadi_action_container.action(action_id="test", display_name="Тестим :)")
-def test_action(
+def get_teacher_schedule(
     student: Annotated[SibadiStudent, RequireStudent()],
-    fruit: Annotated[
+    teacher: Annotated[
         str,
         TextFromCollectionParam(
-            "фрукт, который любит студент",
-            collection=["банан", "яблоко", "кукуруз", "арбуз", "помидор"],
+            "ФИО учителя", tuple(get_teachers_dict().keys())
         ),
     ],
-    mood: Annotated[str, ChoiceParam("настроение студента", variants=["хорошее", "плохое", "я это все джага джага"])],
-    text: Annotated[str, TextParam("текст, который скажет студент")],
+    period: Annotated[
+        str, ChoiceParam("период", ["сегодня", "неделя", "следущяя неделя"])
+    ],
 ) -> str:
-    return f"Студент из {student.group_id}, его настроение '{mood}', любит {fruit}, и говорит: {text}"
+    return "OK os"

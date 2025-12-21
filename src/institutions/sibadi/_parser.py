@@ -14,6 +14,9 @@ SCHEDULE_URL_TEMPLATE: Final[str] = (
 GROUPS_DICT_URL: Final[str] = (
     "https://umu.sibadi.org/api/raspGrouplist?year=2025-2026"
 )
+TEACHERS_DICT_URL: Final[str] = (
+    "https://umu.sibadi.org/api/raspTeacherlist?year=2025-2026"
+)
 
 
 cache: TTLCache[datetime, list[Schedule] | None] = TTLCache(
@@ -97,6 +100,22 @@ def get_groups_dict() -> dict[str, str]:
         return new_dict
 
     raise OSError("Cant get groups list")  # ToDo: make special expceptions
+
+
+@lru_cache
+def get_teachers_dict() -> dict[str, str]:
+    """Возвращает словарь типа {teacher_name: teacher_id}"""
+    teachers_data = requests.get(TEACHERS_DICT_URL, timeout=5)
+
+    if teachers_data.status_code == HTTPStatus.OK:
+        new_dict = {}
+
+        for teacher in teachers_data.json()["data"]:
+            teacher_name = teacher["name"]
+            new_dict[teacher_name] = teacher["id"]
+        return new_dict
+
+    raise OSError("Cant get teachers data")
 
 
 def get_day_schedule(group_id: str, date: datetime) -> Schedule | None:

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from src.config import settings
 from src.repo import AbstractStudentRepo, InMemoryRepo
+from src.telegram.actions import actions_router
 from src.telegram.menu import main_router
 from src.telegram.registration.registration import (
     router,
@@ -19,6 +20,7 @@ load_dotenv()
 
 repo = InMemoryRepo()
 
+
 bot = Bot(
     token=settings.bot.token,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML),
@@ -27,6 +29,7 @@ dp = Dispatcher()
 dp["repo"] = repo
 
 dp.include_router(router)
+dp.include_router(actions_router)
 dp.include_router(main_router)
 dp.include_router(sibadi_router)
 
