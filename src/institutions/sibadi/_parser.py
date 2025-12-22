@@ -17,7 +17,9 @@ GROUPS_DICT_URL: Final[str] = (
 TEACHERS_DICT_URL: Final[str] = (
     "https://umu.sibadi.org/api/raspTeacherlist?year=2025-2026"
 )
-
+TEACHER_SCHEDULE_URL_TEMPLATE: Final[str] = (
+    "https://umu.sibadi.org/api/Rasp?idTeacher={teacher_id}"
+)
 
 cache: TTLCache[datetime, list[Schedule] | None] = TTLCache(
     maxsize=100, ttl=24 * 60 * 60
@@ -116,6 +118,39 @@ def get_teachers_dict() -> dict[str, str]:
         return new_dict
 
     raise OSError("Cant get teachers data")
+
+
+@cached(cache)
+def get_teacher_schedule(teacher_id: str, date: datetime) -> Schedule | None:
+    url = TEACHER_SCHEDULE_URL_TEMPLATE.format(teacher_id=teacher_id)
+
+    date.replace(hour=0, minute=0, second=0)
+    date_string = date.strftime("%Y-%m-%dT%H:%M:%S")
+
+    result = requests.get(url, timeout=5)
+
+    lessons = []
+    if result.status_code == HTTPStatus.OK:
+        result_data = result.json()
+        print(date_string)
+
+        lessons.extend(
+            Lesson(
+                name=raw_lesson["дисциплина"],
+                number=int(raw_lesson["номерЗанятия"]),
+                starts_at=raw_lesson["датаНачала"],
+                ends_at=raw_lesson["датаОкончания"],
+                audience=raw_lesson["аудитория"],
+            )
+            for raw_lesson in result_data["data"]["rasp"]
+            if raw_lesson["дата"] == date_string
+        )
+        if lessons:
+            return Schedule(
+                date=date,
+                lessons=lessons,
+            )
+    return None
 
 
 def get_day_schedule(group_id: str, date: datetime) -> Schedule | None:

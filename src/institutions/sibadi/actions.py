@@ -1,28 +1,35 @@
+from datetime import datetime
 from typing import Annotated
 
 from src.actions import (
     ActionContainer,
-    ChoiceParam,
-    RequireStudent,
+    TextDateParam,
     TextFromCollectionParam,
 )
-from src.institutions.sibadi._parser import get_teachers_dict
-from src.institutions.sibadi.student import SibadiStudent
+from src.formaters import format_schedule
+from src.institutions.sibadi._parser import (
+    get_teacher_schedule,
+    get_teachers_dict,
+)
 
 sibadi_action_container = ActionContainer()
 
 
 @sibadi_action_container.action(action_id="test", display_name="Тестим :)")
-def get_teacher_schedule(
-    student: Annotated[SibadiStudent, RequireStudent()],
+def teacher_schedule_actions(
     teacher: Annotated[
         str,
         TextFromCollectionParam(
             "ФИО учителя", tuple(get_teachers_dict().keys())
         ),
     ],
-    period: Annotated[
-        str, ChoiceParam("период", ["сегодня", "неделя", "следущяя неделя"])
-    ],
+    date: Annotated[datetime, TextDateParam("интересующюю вас дата")],
 ) -> str:
-    return "OK os"
+    schedule = get_teacher_schedule(
+        teacher_id=get_teachers_dict()[teacher], date=date
+    )
+
+    if schedule is None:
+        return "Похоже, учитель сегодня отдыхает :)"
+
+    return format_schedule(schedule)

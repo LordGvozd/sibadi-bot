@@ -68,9 +68,14 @@ async def _set_action_param(
     if not await _verify_param(current_param_type, user_input, msg):
         return
 
-    params = await state.get_value("params", {})
+    param_value = await current_param_type.post_processing(user_input)
 
-    params[current_param_name] = user_input
+    params = await state.get_value("params", default={})
+
+    if params is None:
+        params = {}
+
+    params[current_param_name] = param_value
 
     await state.update_data(params=params)
 
@@ -126,7 +131,7 @@ def _build_kb_from_render_data(
 
     builder = InlineKeyboardBuilder()
     builder.max_width = 1
-    
+
     for index, button in enumerate(render_data["reply_markup"]):
         builder.button(text=button, callback_data=str(index))
 
