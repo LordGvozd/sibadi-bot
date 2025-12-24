@@ -10,6 +10,7 @@ from typing import (
     TypedDict,
     get_args,
     get_origin,
+    override,
     runtime_checkable,
 )
 
@@ -67,7 +68,7 @@ class TextFromCollectionParam(BaseParam):
     async def verify(self, param_value: str) -> VerifyResult:
         if param_value not in self.collection:
             suggestoins = await get_suggestions_async(
-                param_value, self.collection
+        param_value, self.collection
             )
             answer_text = f"Неправильные данные! Возможно, вы имели ввиду {' или '.join(suggestoins)}?"
 
@@ -100,11 +101,31 @@ class ChoiceParam(BaseParam):
         )
 
 
+
 class RequireStudent: ...
 
 
-Param = TextParam | TextFromCollectionParam | ChoiceParam
+ValueParams = TextParam | TextFromCollectionParam | ChoiceParam
 
+@dataclass
+class LazySetting(BaseParam):
+    setting_name: str
+    param: ValueParams
+
+    async def verify(self, param_value: str) -> VerifyResult:
+        return await self.param.verify(param_value)
+
+    
+    async def get_render_data(self) -> RenderData:
+        return await self.param.get_render_data()
+
+SettingParams = LazySetting
+Param = ValueParams | SettingParams
+
+
+
+
+Setting = LazySetting
 
 @dataclass
 class TextResult:
@@ -190,3 +211,5 @@ class ActionContainer:
             return wrapped
 
         return decorator
+
+

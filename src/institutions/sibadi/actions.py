@@ -14,7 +14,6 @@ sibadi_action_container = ActionContainer()
 
 @sibadi_action_container.action(action_id="test", display_name="Тестим :)")
 def get_teacher_schedule(
-    student: Annotated[SibadiStudent, RequireStudent()],
     teacher: Annotated[
         str,
         TextFromCollectionParam(

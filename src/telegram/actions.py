@@ -10,6 +10,7 @@ from src.actions import (
     Action,
     Param,
     RenderData,
+    SettingParams,
 )
 from src.institutions.types import AnyStudent
 from src.telegram.getters import (
@@ -52,6 +53,7 @@ async def _verify_param(
     return False
 
 
+
 async def _set_action_param(
     user_input: str, msg: Message, state: FSMContext
 ) -> None:
@@ -65,16 +67,25 @@ async def _set_action_param(
         msg, state
     )
 
+    params = await state.get_value("params", {})
     if not await _verify_param(current_param_type, user_input, msg):
         return
 
-    params = await state.get_value("params", {})
+    if isinstance(current_param_type, SettingParams):
+        data = await state.get_data()
 
-    params[current_param_name] = user_input
+        data[current_param_type.setting_name] = user_input
+        await state.set_data(data)
+    else:
+        params[current_param_name] = user_input
 
-    await state.update_data(params=params)
+        await state.update_data(params=params)
 
-    if len(params) == len(action.get_params()):
+    # Go to next param
+    current_param_index = list(action.get_params().keys()).index(
+        current_param_name
+    )
+    if current_param_index + 1 == len(action.get_params()):
         await render_action_result(
             action,
             await get_student_from_state(msg.chat.id, state),
@@ -84,10 +95,7 @@ async def _set_action_param(
         )
         return
 
-    current_param_index = list(action.get_params().keys()).index(
-        current_param_name
-    )
-    await _render_set_param(
+    await _render_param_request(
         action=action,
         action_id=action_id,
         param_index=current_param_index + 1,
@@ -133,7 +141,7 @@ def _build_kb_from_render_data(
     return builder.as_markup()
 
 
-async def _render_set_param(
+async def _render_param_request(
     *,
     action: Action,
     action_id: str,
@@ -141,9 +149,39 @@ async def _render_set_param(
     msg: Message,
     state: FSMContext,
 ) -> None:
+    """Send message, that request param. """
     current_param_id, current_param = list(action.get_params().items())[
         param_index
     ]
+    
+    # If already know param
+    if isinstance(current_param, SettingParams):
+        value_from_state = await state.get_value(current_param.setting_name)
+
+        if value_from_state is not None:
+            current_param_index = list(action.get_params().keys()).index(
+                current_param_id
+            )
+            if current_param_index + 1 == len(action.get_params()):
+                params = await state.get_value("params", dict())
+                await render_action_result(
+                    action,
+                    await get_student_from_state(msg.chat.id, state),
+                    params,
+                    msg,
+                    state,
+                )
+                return
+
+            await _render_param_request(
+                action=action,
+                action_id=action_id,
+                param_index=current_param_index + 1,
+                msg=msg,
+                state=state,
+            )
+            return 
+
 
     await state.set_state(ActionState.set_params)
 
@@ -202,7 +240,7 @@ async def action_start(query: CallbackQuery, state: FSMContext) -> None:
         return
 
     if action.get_params():
-        await _render_set_param(
+        await _render_param_request(
             action=action,
             action_id=action_id,
             param_index=0,
