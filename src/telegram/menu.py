@@ -107,6 +107,7 @@ async def process_next_week(query: CallbackQuery, state: FSMContext) -> None:
 
     await _edit_msg_to_action(format_schedule_for_week(next_week), msg)
 
+
 @main_router.callback_query(F.data == "time")
 async def proccess_time(query: CallbackQuery, state: FSMContext) -> None:
     msg = _get_msg(query)

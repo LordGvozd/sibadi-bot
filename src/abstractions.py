@@ -1,5 +1,4 @@
 from abc import ABC, ABCMeta, abstractmethod
-from collections.abc import Sequence
 from datetime import datetime, time
 from enum import StrEnum, unique
 

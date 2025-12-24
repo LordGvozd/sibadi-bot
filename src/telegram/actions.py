@@ -53,7 +53,6 @@ async def _verify_param(
     return False
 
 
-
 async def _set_action_param(
     user_input: str, msg: Message, state: FSMContext
 ) -> None:
@@ -68,17 +67,21 @@ async def _set_action_param(
     )
 
     params = await state.get_value("params", {})
+
+    if params is None:
+        params = {}
+
     if not await _verify_param(current_param_type, user_input, msg):
         return
 
+    param_value = await current_param_type.post_processing(user_input)
     if isinstance(current_param_type, SettingParams):
         data = await state.get_data()
 
-        data[current_param_type.setting_name] = user_input
+        data[current_param_type.setting_name] = param_value
         await state.set_data(data)
     else:
-        params[current_param_name] = user_input
-
+        params[current_param_name] = param_value
         await state.update_data(params=params)
 
     # Go to next param
@@ -113,6 +116,12 @@ async def render_action_result(
     state: FSMContext,
 ) -> None:
     params = {}
+    
+    for param_name, param_type in action.get_params().items():
+        if isinstance(param_type, SettingParams):
+            from_state_value = await state.get_value(param_type.setting_name)
+            params[param_name] = from_state_value
+
     for param_name in action.get_required_params():
         params[param_name] = student
 
@@ -134,7 +143,7 @@ def _build_kb_from_render_data(
 
     builder = InlineKeyboardBuilder()
     builder.max_width = 1
-    
+
     for index, button in enumerate(render_data["reply_markup"]):
         builder.button(text=button, callback_data=str(index))
 
@@ -149,11 +158,11 @@ async def _render_param_request(
     msg: Message,
     state: FSMContext,
 ) -> None:
-    """Send message, that request param. """
+    """Send message, that request param."""
     current_param_id, current_param = list(action.get_params().items())[
         param_index
     ]
-    
+
     # If already know param
     if isinstance(current_param, SettingParams):
         value_from_state = await state.get_value(current_param.setting_name)
@@ -163,7 +172,7 @@ async def _render_param_request(
                 current_param_id
             )
             if current_param_index + 1 == len(action.get_params()):
-                params = await state.get_value("params", dict())
+                params = await state.get_value("params", {})
                 await render_action_result(
                     action,
                     await get_student_from_state(msg.chat.id, state),
@@ -180,8 +189,7 @@ async def _render_param_request(
                 msg=msg,
                 state=state,
             )
-            return 
-
+            return
 
     await state.set_state(ActionState.set_params)
 

@@ -2,7 +2,8 @@ import functools
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from typing import (
     Annotated,
     Any,
@@ -13,6 +14,8 @@ from typing import (
     override,
     runtime_checkable,
 )
+
+import dateparser
 
 from src.suggestions import get_suggestions_async
 
@@ -44,6 +47,10 @@ class BaseParam(ABC):
     async def get_render_data(self) -> RenderData:
         raise NotImplementedError
 
+    async def post_processing(self, param_value: str) -> Any:
+        """This function need to stuff like convertations after getting value"""
+        return param_value
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.display_name}"
 
@@ -60,6 +67,27 @@ class TextParam(BaseParam):
 
 
 @dataclass
+class TextDateParam(TextParam):
+    @override
+    async def verify(self, param_value: str) -> VerifyResult:
+        date = dateparser.parse(param_value)
+
+        if date is None:
+            return VerifyResult(
+                verifcation_completed=False, msg="Дата неправильная!"
+            )
+        return VerifyResult(verifcation_completed=True, msg="OK")
+
+    @override
+    async def post_processing(self, param_value: str) -> datetime:
+        date = dateparser.parse(param_value)
+
+        if date is None:
+            raise ValueError("Not valid param_value!")
+        return date
+
+
+@dataclass
 class TextFromCollectionParam(BaseParam):
     """Value of this param must be in collection."""
 
@@ -68,9 +96,11 @@ class TextFromCollectionParam(BaseParam):
     async def verify(self, param_value: str) -> VerifyResult:
         if param_value not in self.collection:
             suggestoins = await get_suggestions_async(
-        param_value, self.collection
+                param_value, self.collection
             )
-            answer_text = f"Неправильные данные! Возможно, вы имели ввиду {' или '.join(suggestoins)}?"
+            answer_text = "Неправильные данные! Возможно, вы имели ввиду:\n"
+            for variant in suggestoins:
+                answer_text += f"<code>{variant}</code>\n"
 
             return VerifyResult(verifcation_completed=False, msg=answer_text)
 
@@ -101,31 +131,34 @@ class ChoiceParam(BaseParam):
         )
 
 
-
 class RequireStudent: ...
 
 
 ValueParams = TextParam | TextFromCollectionParam | ChoiceParam
+
 
 @dataclass
 class LazySetting(BaseParam):
     setting_name: str
     param: ValueParams
 
+    display_name: str = field(
+        init=False, default=""
+    )  # We dont need this field, because param display_name would be displayed
+
     async def verify(self, param_value: str) -> VerifyResult:
         return await self.param.verify(param_value)
 
-    
     async def get_render_data(self) -> RenderData:
         return await self.param.get_render_data()
+
 
 SettingParams = LazySetting
 Param = ValueParams | SettingParams
 
 
-
-
 Setting = LazySetting
+
 
 @dataclass
 class TextResult:
@@ -211,5 +244,3 @@ class ActionContainer:
             return wrapped
 
         return decorator
-
-
