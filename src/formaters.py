@@ -27,8 +27,8 @@ def format_timetable(timetable: tuple[tuple[time, time], ...]) -> str:
 def format_schedule(schedule: Schedule | None) -> str:
     if not schedule:
         return "У вас нет занятий на этот день!"
-
-    head = DAY_SCHEDULE_TEMPLATE.format(date=schedule.date.strftime("%D.%m"))
+    
+    head = DAY_SCHEDULE_TEMPLATE.format(date=schedule.date.strftime("%d.%m"))
     body = "\n".join([
         LESSON_TEMPLATE.format(
             number=lesson.number,

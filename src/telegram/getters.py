@@ -50,6 +50,10 @@ async def get_inst_from_state(msg: Message, state: FSMContext) -> Institution:
 
 async def get_student_from_state(tg_id: int, state: FSMContext) -> AnyStudent:
     inst = await state.get_value("inst")
+    
+    if not inst:
+        raise ValueError("Institution is None")
+
     match InstitutionNames(str(inst)):
         case InstitutionNames.SIBADI:
             group_id = await state.get_value("group_id")

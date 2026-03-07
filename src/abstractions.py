@@ -10,7 +10,7 @@ from src.models import Schedule
 
 @unique
 class InstitutionNames(StrEnum):
-    SIBADI = "sibadi"
+    SIBADI = "СибАДИ"
 
 
 class StudentMeta(msgspec.StructMeta, ABCMeta): ...  # noqa: WPS604

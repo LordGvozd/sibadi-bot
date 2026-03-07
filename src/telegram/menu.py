@@ -30,7 +30,6 @@ async def open_menu(msg: Message, state: FSMContext) -> None:
     builder.button(text="Завтра", callback_data="tommorow")
     builder.button(text="Неделя", callback_data="remain_week")
     builder.button(text="Следущяя неделя", callback_data="next_week")
-    builder.button(text="Звонки", callback_data="time")
     builder.button(text="Действия", callback_data="action")
 
     await state.set_state(BaseStates.main)
@@ -106,16 +105,6 @@ async def process_next_week(query: CallbackQuery, state: FSMContext) -> None:
     )
 
     await _edit_msg_to_action(format_schedule_for_week(next_week), msg)
-
-
-@main_router.callback_query(F.data == "time")
-async def proccess_time(query: CallbackQuery, state: FSMContext) -> None:
-    msg = _get_msg(query)
-
-    inst = await get_inst_from_state(msg, state)
-
-    await _edit_msg_to_action(format_timetable(inst.get_timetable), msg)
-
 
 @main_router.callback_query()
 async def process_unknow_query(query: CallbackQuery) -> None:

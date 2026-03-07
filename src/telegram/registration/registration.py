@@ -20,6 +20,10 @@ registration_by_institution = {
     InstitutionNames.SIBADI: process_sibadi_registration
 }
 
+fullname_by_inst = {
+    InstitutionNames.SIBADI: "СибАДИ"
+}
+
 
 class CommonRegistrationState(StatesGroup):
     choose_institution = State()
@@ -29,7 +33,7 @@ def build_choose_institution_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     for name in InstitutionNames:
-        builder.button(text=name, callback_data=f"{name.value}")
+        builder.button(text=fullname_by_inst[name], callback_data=f"{name.value}")
     return builder.as_markup()
 
 
