@@ -1,35 +1,39 @@
-from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from abc import ABC, ABCMeta, abstractmethod
 from datetime import datetime, time
 from enum import StrEnum, unique
-from typing import Protocol, runtime_checkable
 
+import msgspec
+
+from src.actions import ActionContainer
 from src.models import Schedule
 
 
 @unique
 class InstitutionNames(StrEnum):
-    SIBADI = "sibadi"
+    SIBADI = "СибАДИ"
 
 
-@runtime_checkable
-class Student(Protocol):
+class StudentMeta(msgspec.StructMeta, ABCMeta): ...  # noqa: WPS604
+
+
+class AbstarctStudent(msgspec.Struct, kw_only=True, metaclass=StudentMeta):
     tg_id: str
     institution_name: InstitutionNames
 
 
-@runtime_checkable
-class ScheduleGetter[ConcreteStudent: Student](Protocol):
+class ScheduleGetter[ConcreteStudent: AbstarctStudent](ABC):
+    @abstractmethod
     async def get_day_schedule_for(
         self, student: ConcreteStudent, date: datetime
     ) -> Schedule | None: ...
 
+    @abstractmethod
     async def get_week_schedule_for(
         self, student: ConcreteStudent, date: datetime
     ) -> list[Schedule] | None: ...
 
 
-class Institution[ConcreteStudent: Student](ABC):
+class Institution[ConcreteStudent: AbstarctStudent](ABC):
     @property
     @abstractmethod
     def name(self) -> InstitutionNames: ...
@@ -40,4 +44,8 @@ class Institution[ConcreteStudent: Student](ABC):
 
     @property
     @abstractmethod
-    def get_timetable(self) -> Sequence[tuple[time, time]]: ...
+    def get_timetable(self) -> tuple[tuple[time, time], ...]: ...
+
+    @property
+    @abstractmethod
+    def action_container(self) -> ActionContainer: ...

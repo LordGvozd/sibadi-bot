@@ -17,7 +17,7 @@ def format_timetable(timetable: tuple[tuple[time, time], ...]) -> str:
         starts_at = f"{lesson[0].hour}:{lesson[0].minute}"
         ends_at = f"{lesson[1].hour}:{lesson[1].minute}"
 
-        text += LESSON_TEMPLATE.format(
+        text += LESSON_TIME_TEMPLATE.format(
             number=index + 1, starts_at=starts_at, ends_at=ends_at
         )
 
@@ -27,8 +27,8 @@ def format_timetable(timetable: tuple[tuple[time, time], ...]) -> str:
 def format_schedule(schedule: Schedule | None) -> str:
     if not schedule:
         return "У вас нет занятий на этот день!"
-
-    head = DAY_SCHEDULE_TEMPLATE.format(date=schedule.date.strftime("%D.%m"))
+    
+    head = DAY_SCHEDULE_TEMPLATE.format(date=schedule.date.strftime("%d.%m"))
     body = "\n".join([
         LESSON_TEMPLATE.format(
             number=lesson.number,

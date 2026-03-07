@@ -1,31 +1,29 @@
 from datetime import datetime, time
-
-import msgspec
+from typing import override
 
 from src.abstractions import (
     Institution,
     InstitutionNames,
     ScheduleGetter,
 )
+from src.actions import ActionContainer
 from src.institutions.sibadi._parser import (
     get_day_schedule,
     get_remain_week_schedule,
 )
+from src.institutions.sibadi.actions import sibadi_action_container
+from src.institutions.sibadi.student import SibadiStudent
 from src.models import Schedule
 
 
-class SibadiStudent(msgspec.Struct):
-    tg_id: str
-    institution_name = InstitutionNames.SIBADI
-    group_id: str
-
-
-class SibadiScheduleGetter:
+class SibadiScheduleGetter(ScheduleGetter[SibadiStudent]):
+    @override
     async def get_day_schedule_for(
         self, student: SibadiStudent, date: datetime
     ) -> Schedule | None:
         return get_day_schedule(student.group_id, date)
 
+    @override
     async def get_week_schedule_for(
         self, student: SibadiStudent, date: datetime
     ) -> list[Schedule] | None:
@@ -34,14 +32,22 @@ class SibadiScheduleGetter:
 
 class Sibadi(Institution[SibadiStudent]):
     @property
+    @override
     def name(self) -> InstitutionNames:
         return InstitutionNames.SIBADI
 
     @property
+    @override
     def schedule_getter(self) -> ScheduleGetter[SibadiStudent]:
         return SibadiScheduleGetter()
 
     @property
+    @override
+    def action_container(self) -> ActionContainer:
+        return sibadi_action_container
+
+    @property
+    @override
     def get_timetable(self) -> tuple[tuple[time, time], ...]:
         return (  # noqa: WPS227
             (time(8, 20), time(9, 50)),  # noqa: WPS432
